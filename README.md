@@ -1,2 +1,2 @@
-# computatonalgeometry
-Computation Geometry Problems
+# computationalgeometry
+Computational Geometry Problems
