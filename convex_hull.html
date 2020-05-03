@@ -1,0 +1,159 @@
+
+<html>
+<style>
+
+    h2   {color: blue;}
+    h2   {font-family: Verdana}
+
+    .button {
+        background-color: #005050;
+        border: none;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+        box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+    }
+
+</style>
+    
+<h2>Convex Hull Generator</h2>
+
+<canvas id="canvas" width="600" height="400"></canvas>
+
+<script>
+
+    var points = [];
+
+    var canvas = document.getElementById('canvas');
+    var context = canvas.getContext('2d');
+    //Draw a border around the canvas
+    context.strokeStyle = 'black';
+    context.lineWidth = 2;
+    context.strokeRect(0, 0, canvas.width, canvas.height);
+
+    //Add an event listener that will draw a point where the mouse is clicked
+    canvas.addEventListener('mousedown', function(e) {
+        drawPoint(canvas, e)
+    })
+
+    //Get the coordinates on the canvas where the mouse was clicked
+    function getCursorPosition(canvas, event) {
+
+        var coordinate = {
+            x : 0, y : 0
+        }
+
+        const bounding_box = canvas.getBoundingClientRect()
+        coordinate.x = event.clientX - bounding_box.left
+        coordinate.y = event.clientY - bounding_box.top
+
+        return coordinate;
+
+    }
+
+    //Draw a point at the selected coordinates on the canvas
+    function drawPoint(canvas, event){
+
+        position = getCursorPosition(canvas, event);
+        console.log("Position clicked x: " + position.x + " y: " + position.y)
+        points.push(position);
+        context.beginPath();
+        context.fillStyle="blue"
+        context.arc(position.x,position.y,3,0,2*Math.PI);
+        context.stroke();
+
+    }
+
+    //Display a list of points on the console
+    function logPointsSequence(label, list){
+        for (n =0; n < list.length;n++){
+            console.log(label+" "+n+" ("+list[n].x + ","+ + list[n].y+")");
+        }
+    }
+
+    //Draw lines between a series of points - used to draw the convex hull
+    function drawConnectedPoints(pointlist){
+        console.log("DRAWING HULL");
+        for(i=0; i < pointlist.length-1; i++){
+            context.beginPath();
+            context.moveTo(pointlist[i].x, pointlist[i].y);
+            context.lineTo(pointlist[i+1].x, pointlist[i+1].y);
+            context.stroke();
+        }
+    }
+
+    //Iterate through the sequences of 3 points to remove any right turns 
+    function checkTurnDirection(list){
+        if (list.length > 2){
+            max = list.length-1;
+            for (j = max; j >= 2; j--){
+            //check if make a right turn
+                let first = list[j-2];
+                let middle = list[j-1];
+                let last = list[j];
+                let crossProduct = ((middle.x-first.x)*(last.y-first.y))-((middle.y-first.y)*(last.x-first.x));
+                if(crossProduct < 0){
+                    //remove the middle of the last 3 points
+                    list.splice(list.length-2,1);    
+                    console.log("Removing the point with coordinates ("+middle.x+","+middle.y+")");
+                }
+            }   
+        } 
+        return list;
+    }
+
+    //Generate the convex hull for a list of points on the canvas
+    function convexHull(){
+
+        upper = [];
+        lower = [];
+
+        if (points.length < 3){
+            return;
+        }
+        console.log("Enough points to draw convex hull");
+
+        //Sort the points by increasing x value
+        points.sort(function(a, b) {
+            return parseFloat(a.x) - parseFloat(b.x);
+        });
+
+        //Calculate the upper part of the convex hull
+        upper.push(points[0]);
+        upper.push(points[1]);
+        for(i = 2; i < points.length; i++){
+            upper.push(points[i]);
+            upper = checkTurnDirection(upper); 
+        }
+        logPointsSequence("Upper: ",upper);
+
+        //Calculate the lower part of the convex hull
+        lower.push(points[points.length-1]);
+        lower.push(points[points.length-2]);
+        for(i = points.length-3; i >= 0; i--){
+            lower.push(points[i]);
+            lower = checkTurnDirection(lower);
+        }
+        logPointsSequence("Lower: ",lower);
+
+        //Append the upper and lower hulls and draw the result on the canvas
+        pointlist = Array.from(upper)
+        pointlist.push.apply(pointlist,lower);
+        logPointsSequence("Consolidated: ",pointlist);
+        drawConnectedPoints(pointlist);
+      
+        //remember to put in the fix to check if 2 points have the same x value (then sort by y)
+    }
+
+ 
+</script>
+
+<p></p>
+<button class="button" onclick="convexHull()">Convex Hull</button>
+
+</hmtl>
